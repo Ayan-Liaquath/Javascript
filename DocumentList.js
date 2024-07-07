@@ -270,25 +270,3 @@ function deleteDocumentId() {
   localStorage.setItem("documents", documentMap);
   document.getElementById(documentIdToBeDeleted).remove();
 }
-
-// For converting Map to string.
-function jsonStringifyReplacer(key, value) {
-  if (value instanceof Map) {
-    return {
-      dataType: "Map",
-      value: Array.from(value.entries()),
-    };
-  } else {
-    return value;
-  }
-}
-
-// For Map parsing.
-function jsonParseReviver(key, value) {
-  if (typeof value === "object" && value !== null) {
-    if (value.dataType === "Map") {
-      return new Map(value.value);
-    }
-  }
-  return value;
-}
