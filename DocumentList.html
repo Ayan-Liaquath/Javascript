@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js"
+        integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc"
+        crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="./Common.js"></script>
+    <script src="./DocumentList.js"></script>
+</head>
+
+<body>
+    <ul class="nav nav-pills nav-fill">
+        <li class="nav-item">
+            <a class="nav-link tab-link" href="./ChatList.html">Group Chat</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link tab-link" href="./UserList.html">Manage Users</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link tab-link active" href="./DocumentList.html">Manage Documents</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link tab-link tab-link-last-column" href="./Welcome.html"
+                onclick="removeLoggedInUserIdFromLocalStorage()">Logout</a>
+        </li>
+    </ul>
+    <h1 class="header header-under-tab">My Uploads</h1>
+    <div class="table-padding">
+        <table class="table table-striped table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th class="th-center-aligned">Label</th>
+                    <th class="th-center-aligned">File Name</th>
+                    <th class="th-center-aligned">Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+    <br>
+    <br>
+    <button type="button" class="add-document-button" data-bs-toggle="modal" data-bs-target="#addDocumentModal"
+        data-bs-backdrop="static" data-bs-keyboard="false">
+        <img class="plus-image" src="./Plus.png"> Add Document
+    </button>
+    <div class="modal fade" id="addDocumentModal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addDocumentModalLabel">Upload Document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form onsubmit="return addDocument()">
+                    <div class="modal-body model-body-custom">
+                        <span class="col-sm-5 text-label">File Description</span>
+                        <input class="col-sm-7 text-box-without-margin" id="documentDescription" type="text"
+                            required><br><br>
+                        <span class="col-sm-6 text-label">File Upload</span>
+                        <input class="col-sm-6" id="documentName" type="file" required><br>
+                    </div>
+                    <div class="modal-footer model-footer-custom">
+                        <input type="submit" value="Upload Now">
+                        <input type="button" data-bs-dismiss="modal" value="Cancel">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="editDocumentModal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editDocumentModalLabel">Edit Document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form onsubmit="return editDocument()">
+                    <div class="modal-body model-body-custom">
+                        <span class="col-sm-6 text-label">File Description</span>
+                        <input class="col-sm-6 text-box-without-margin" id="editDocumentDescription" type="text"
+                            required>
+                    </div>
+                    <div class="modal-footer model-footer-custom">
+                        <input type="submit" value="Save">
+                        <input type="button" data-bs-dismiss="modal" value="Cancel"
+                            onclick="idOfDocumentToBeEdited(null)">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade delete-modal" id="deleteDocumentModal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteDocumentModalLabel">Confirm File Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body model-body-custom">
+                    <img class="img-align" src="./Question.png" /> <span class="span-align">Are you sure?</span>
+                </div>
+                <div class="modal-footer model-footer-custom">
+                    <input type="button" data-bs-dismiss="modal" value="Ok" onclick="deleteDocumentId()">
+                    <input type="button" data-bs-dismiss="modal" value="Cancel" onclick="idOfDocumentToBeDeleted(null)">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $("#addDocumentModal").on("hidden.bs.modal", function () {
+            $(this).find("form").trigger("reset");
+        });
+        $("#editDocumentModal").on("hidden.bs.modal", function () {
+            $(this).find("form").trigger("reset");
+        });
+        $("#editDocumentModal").on("shown.bs.modal", function () {
+            if (!localStorage || !documentIdToBeEdited || !loggedInUserId) {
+                alert("Internal error!!!");
+                return;
+            }
+
+            const documentMap = localStorage.getItem("documents");
+            const editDocumentDescriptionElement = document.getElementById(
+                "editDocumentDescription"
+            );
+
+            if (!documentMap || !editDocumentDescriptionElement) {
+                alert("Internal error!!!");
+                return;
+            }
+
+            const documentMapObj = JSON.parse(documentMap, jsonParseReviver);
+            if (!documentMapObj.has(loggedInUserId)) {
+                alert("Internal error!!!");
+                return false;
+            }
+
+            const userDocuments = documentMapObj.get(loggedInUserId);
+            const documentIndex = userDocuments.findIndex(
+                (document) => document.id === documentIdToBeEdited
+            );
+
+            if (documentIndex === -1) {
+                alert("Internal error!!!");
+                return;
+            }
+
+            editDocumentDescriptionElement.value = userDocuments[documentIndex].label;
+        });
+    </script>
+</body>
+
+</html>
